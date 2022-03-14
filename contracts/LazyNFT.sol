@@ -27,8 +27,8 @@ contract LazyNFT is ERC721URIStorage, EIP712, AccessControl {
     /// @notice The id of the token to be redeemed. Must be unique - if another token with this ID already exists, the redeem function will revert.
     uint256 tokenId;
 
-    /// @notice The minimum price (in wei) that the NFT creator is willing to accept for the initial sale of this NFT.
-    uint256 minPrice;
+    /// @notice The recipient address of the NFT.
+    address recipient;
 
     /// @notice The metadata URI to associate with this token.
     string uri;
@@ -49,7 +49,7 @@ contract LazyNFT is ERC721URIStorage, EIP712, AccessControl {
     require(hasRole(MINTER_ROLE, signer), "Signature invalid or unauthorized");
 
     // make sure that the redeemer is paying enough to cover the buyer's cost
-    require(msg.value >= voucher.minPrice, "Insufficient funds to redeem");
+    require(msg.sender == voucher.recipient, "Voucher Recipient is different");
 
     // first assign the token to the signer, to establish provenance on-chain
     _mint(signer, voucher.tokenId);
@@ -86,9 +86,9 @@ contract LazyNFT is ERC721URIStorage, EIP712, AccessControl {
   /// @param voucher An NFTVoucher to hash.
   function _hash(NFTVoucher calldata voucher) internal view returns (bytes32) {
     return _hashTypedDataV4(keccak256(abi.encode(
-      keccak256("NFTVoucher(uint256 tokenId,uint256 minPrice,string uri)"),
+      keccak256("NFTVoucher(uint256 tokenId,address recipient,string uri)"),
       voucher.tokenId,
-      voucher.minPrice,
+      voucher.recipient,
       keccak256(bytes(voucher.uri))
     )));
   }
